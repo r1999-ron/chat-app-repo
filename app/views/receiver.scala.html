@@ -1,0 +1,46 @@
+@()
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Receiver UI</title>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script>
+                function fetchMessages() {
+                    const userId = $('#userId').val();
+
+                    // Construct the URL with the userId parameter
+                    const url = '@routes.ChatController.fetchMessages("")' + userId;
+
+                    $.ajax({
+                        url: url,
+                        type: 'GET',
+                        success: function(messages) {
+                            const messageList = $('#messageList');
+                            messageList.empty();
+                            messages.forEach(function(message) {
+                                // Check if the message object has the content property
+                                if (message.hasOwnProperty('content')) {
+                                    // Append the content to the message list
+                                    messageList.append(`<li>${message.content}</li>`);
+                                } else {
+                                    // Log an error if the content property is missing
+                                    console.error('Message content not found:', message);
+                                }
+                            });
+                        },
+                        error: function(error) {
+                            // Handle errors gracefully
+                            console.error('Error fetching messages:', error);
+                            alert('Error fetching messages');
+                        }
+                    });
+                }
+        </script>
+    </head>
+    <body>
+        <h1>Receiver UI</h1>
+        <input type="text" id="userId" placeholder="User ID"><br>
+        <button onclick="fetchMessages()">Fetch Messages</button>
+        <ul id="messageList"></ul>
+    </body>
+</html>

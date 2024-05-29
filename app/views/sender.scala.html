@@ -1,0 +1,39 @@
+@()
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Sender UI</title>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script>
+                function sendMessage() {
+                    const message = {
+                        senderId: $('#senderId').val(),
+                        receiverId: $('#receiverId').val(),
+                        content: $('#content').val(),
+                        timestamp: Date.now()
+                    };
+
+                    $.ajax({
+                        url: '@routes.ChatController.sendMessage',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(message),
+                        success: function(response) {
+                            alert('Message sent successfully');
+                        },
+                        error: function(error) {
+                            alert('Error sending message');
+                        }
+                    });
+                }
+        </script>
+    </head>
+    <body>
+        <h1>Sender UI</h1>
+        <input type="text" id="senderId" placeholder="Sender ID"><br>
+        <input type="text" id="receiverId" placeholder="Receiver ID"><br>
+        <textarea id="content" placeholder="Message content"></textarea><br>
+        <button onclick="sendMessage()">Send Message</button>
+    </body>
+</html>
