@@ -1,0 +1,237 @@
+@(username: String)
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Chat Application</title>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    background-color: #f5f5f5;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    padding: 20px;
+                }
+
+                h1 {
+                    color: #333;
+                }
+
+                #chat-container {
+                    display: flex;
+                    justify-content: space-between;
+                    width: 100%;
+                    max-width: 1200px;
+                    background: #fff;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                    border-radius: 8px;
+                    padding: 20px;
+                    box-sizing: border-box;
+                }
+
+                .chat-box {
+                    width: 48%;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                }
+
+                #messageListSender,
+                #messageListReceiver {
+                    list-style-type: none;
+                    padding: 0;
+                    max-height: 300px;
+                    overflow-y: auto;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    width: 100%;
+                    margin-bottom: 20px;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                #messageListSender li,
+                #messageListReceiver li {
+                    padding: 10px;
+                    margin: 5px 0;
+                    border-radius: 5px;
+                    word-wrap: break-word;
+                    max-width: 70%;
+                }
+
+                .sent {
+                    background-color: #e1ffc7;
+                    align-self: flex-end;
+                }
+
+                .received {
+                    background-color: #e7e7e7;
+                    align-self: flex-start;
+                }
+
+                .message-input {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    width: 100%;
+                }
+
+                .message-input input,
+                .message-input textarea {
+                    width: 100%;
+                    padding: 10px;
+                    border: 1px solid #ddd;
+                    border-radius: 5px;
+                }
+
+                .message-input button {
+                    padding: 10px;
+                    background-color: #28a745;
+                    color: #fff;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                }
+
+                .message-input button:hover {
+                    background-color: #218838;
+                }
+
+                .reply-button {
+                    background-color: #007bff;
+                    color: #fff;
+                    border: none;
+                    padding: 5px 10px;
+                    border-radius: 3px;
+                    cursor: pointer;
+                    margin-left: 10px;
+                }
+
+                .reply-button:hover {
+                    background-color: #0056b3;
+                }
+
+                .logout-button {
+                    padding: 10px;
+                    background-color: #dc3545;
+                    color: #fff;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    margin-top: 20px;
+                }
+
+                .logout-button:hover {
+                    background-color: #c82333;
+                }
+        </style>
+            <!-- Logout button -->
+        <button id="logoutButton" class="logout-button">Logout</button>
+
+        <script>
+                document.getElementById('logoutButton').addEventListener('click', function() {
+                    window.location.href = 'http://localhost:9299/login';s
+                });
+        </script>
+        <script>
+                function sendMessage(from, to) {
+                    const contentId = from === '@username' ? '#senderContent' : '#receiverContent';
+                    const content = $(contentId).val().trim();
+
+                    if (!content) {
+                        alert('Message content cannot be empty');
+                        return;
+                    }
+
+                    const message = {
+                        senderId: from,
+                        receiverId: to,
+                        content: content,
+                        timestamp: Date.now()
+                    };
+
+                    $.ajax({
+                        url: '@routes.ChatController.sendMessage',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(message),
+                        success: function(response) {
+                            $(contentId).val(''); // Clear the input field after sending a message
+                            appendMessage(message, from === '@username' ? 'sent' : 'received', `#messageList${from === '@username' ? 'Sender' : 'Receiver'}`);
+                        },
+                        error: function(error) {
+                            alert('Error sending message');
+                        }
+                    });
+                }
+
+                function fetchMessages(userId, listId) {
+                    const url = '@routes.ChatController.fetchMessages(":userId")'.replace(':userId', userId);
+                    $.ajax({
+                        url: url,
+                        type: 'GET',
+                        success: function(messages) {
+                            const messageList = $(listId);
+                            messageList.find('li').remove();
+                            messages.forEach(function(message) {
+                                const messageClass = message.senderId === userId ? 'sent' : 'received';
+                                appendMessage(message, messageClass, listId);
+                            });
+                        },
+                        error: function(error) {
+                            alert('Error fetching messages');
+                        }
+                    });
+                }
+
+                function appendMessage(message, messageClass, listId) {
+                    const messageList = $(listId);
+                    const messageElement = `<li class="${messageClass}">${message.senderId}: ${message.content} <button class="reply-button" onclick="prepareReply('${message.senderId}', '${messageClass === 'sent' ? 'Receiver' : 'Sender'}')">Reply</button></li>`;
+                    messageList.append(messageElement);
+                }
+
+                function prepareReply(receiverId, boxId) {
+                    $(`#${boxId === 'Sender' ? 'receiver' : 'sender'}Id`).val(receiverId);
+                    $(`#${boxId === 'Sender' ? 'sender' : 'receiver'}Content`).focus();
+                }
+
+                $(document).ready(function() {
+                    fetchMessages('@username', '#messageListSender');
+                    fetchMessages('receiver', '#messageListReceiver');
+                    setInterval(() => {
+                        fetchMessages('@username', '#messageListSender');
+                        fetchMessages('receiver', '#messageListReceiver');
+                    }, 5000); // Fetch messages every 5 seconds
+                });
+        </script>
+    </head>
+    <body>
+        <h1>Chat Application</h1>
+        <div id="chat-container">
+            <div class="chat-box">
+                <h2>Sender (@username)</h2>
+                <div class="message-input">
+                    <input type="hidden" id="senderId" value="@username" />
+                    <label for="senderContent">Message:</label>
+                    <textarea id="senderContent" placeholder="Enter your message"></textarea>
+                    <button onclick="sendMessage('@username', 'receiver')">Send Message</button>
+                </div>
+                <h2>Messages</h2>
+                <ul id="messageListSender"></ul>
+            </div>
+            <div class="chat-box">
+                <h2>Chatbot (receiver)</h2>
+                <div class="message-input">
+                    <input type="hidden" id="receiverId" value="receiver" />
+                    <label for="receiverContent">Message:</label>
+                    <textarea id="receiverContent" placeholder="Enter your message"></textarea>
+                    <button onclick="sendMessage('receiver', '@username')">Send Message</button>
+                </div>
+                <h2>Messages</h2>
+                <ul id="messageListReceiver"></ul>
+            </div>
+        </div>
+    </body>
+</html>
