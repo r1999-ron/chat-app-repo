@@ -6,11 +6,13 @@
 # An example controller showing a sample home page
 #GET     /                           controllers.HomeController.index()
 
-GET     /                           controllers.ChatController.index()
+#GET     /                           controllers.ChatController.index()
 # Sender UI
-GET     /sender                     controllers.ChatController.sender()
+#GET     /sender                     controllers.ChatController.sender()
 
-GET    /receiver                    controllers.ChatController.receiver()
+#GET    /receiver                    controllers.ChatController.receiver()
+
+GET     /chat                        controllers.ChatController.chatPage
 
 +nocsrf
 POST    /sendMessage                controllers.ChatController.sendMessage
