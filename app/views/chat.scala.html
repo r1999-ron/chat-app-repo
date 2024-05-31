@@ -1,4 +1,4 @@
-@(username: String)
+@(username: String, loginUrl: String)
 
 <!DOCTYPE html>
 <html>
@@ -132,7 +132,7 @@
 
         <script>
                 document.getElementById('logoutButton').addEventListener('click', function() {
-                    window.location.href = 'http://localhost:9299/login';s
+                    window.location.href = '@loginUrl';
                 });
         </script>
         <script>

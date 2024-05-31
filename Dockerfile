@@ -21,9 +21,9 @@ WORKDIR /app
 
 # Make port 9000 available to the world outside this container
 EXPOSE 9000
-
 # Define environment variable
 ENV PLAY_HTTP_SECRET=thisisanapplicationsecretdonebyusingscala
+ENV LOGIN_URL=http://localhost:9299/login
 
 # Run the binary script when the container launches
 CMD ./bin/scala-chat-application -Dplay.http.secret.key=$PLAY_HTTP_SECRET

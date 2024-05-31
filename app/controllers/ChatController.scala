@@ -6,6 +6,7 @@ import javax.inject._
 import play.api.libs.json._
 import play.api.mvc._
 import services.{DatabaseService, KafkaMessageConsumer, KafkaMessageProducer}
+import play.api.Configuration
 
 import scala.concurrent.{ExecutionContext, Future}
 import models.Message
@@ -19,10 +20,13 @@ class ChatController @Inject()(
                                 kafkaProducer: KafkaMessageProducer,
                                 dbService: DatabaseService,// Inject KafkaMessageConsumer actor
                                 kafkaConsumer: KafkaMessageConsumer,
-                                lifeCycle: ApplicationLifecycle
+                                lifeCycle: ApplicationLifecycle,
+                                config: Configuration
                               )(implicit ec: ExecutionContext) extends AbstractController(cc) {
 
   kafkaConsumer.receiveMessages()
+
+  private val loginUrl: String = config.get[String]("login.url")
 
   /*def chatPage = Action { implicit request =>
     println("Inside chatPage method")
@@ -61,9 +65,9 @@ class ChatController @Inject()(
 
   def chatPage = Action { implicit request =>
     request.getQueryString("username").map { username =>
-      Ok(views.html.chat(username))
+      Ok(views.html.chat(username, loginUrl))
     }.getOrElse {
-      Redirect("http://localhost:9299/login")
+      Redirect(loginUrl)
     }
   }
 
