@@ -27,6 +27,7 @@ class ChatController @Inject()(
   kafkaConsumer.receiveMessages()
 
   private val loginUrl: String = config.get[String]("login.url")
+  private val chatappUrl : String = config.get[String]("chatapp.url")
 
   /*def chatPage = Action { implicit request =>
     println("Inside chatPage method")
@@ -108,6 +109,6 @@ class ChatController @Inject()(
     }
   }
   def index() = Action { implicit request: Request[AnyContent] =>
-    Ok(views.html.index())
+    Ok(views.html.index(chatappUrl))
   }
 }

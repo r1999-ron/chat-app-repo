@@ -1,3 +1,4 @@
+@(chatappUrl: String)
 <!DOCTYPE html>
 <html>
     <head>
@@ -55,7 +56,7 @@
 
         <script>
       function enterChat() {
-          window.location.href = 'http://localhost:9199/chat'; // Replace with the URL of your chat page
+          window.location.href = '@chatappUrl';
       }
     </script>
     </body>
