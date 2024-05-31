@@ -25,19 +25,17 @@ class DatabaseService @Inject()(dbConfigProvider: DatabaseConfigProvider)(implic
   private val messages = TableQuery[MessagesTable]
 
   def saveMessage(receiverId: String, senderId: String, content: String, timestamp: Long): Future[Unit] = {
-    logger.info(s"Saving message: senderId=$senderId, receiverId=$receiverId, content=$content, timestamp=$timestamp")
+    println(s"Saving message: senderId=$senderId, receiverId=$receiverId, content=$content, timestamp=$timestamp")
     db.run {
       messages += Message(senderId, receiverId, content, timestamp)
     }.map(_ => {
-      logger.info("Message saved successfully")
+      println("Message saved successfully")
     }).recover {
       case ex: Exception =>
-        logger.error(s"Error saving message: ${ex.getMessage}")
+        println(s"Error saving message: ${ex.getMessage}")
     }
   }
-
   def getMessagesForUser(userId: String): Future[List[Message]] = db.run {
-    println(s"The user id is $userId")
-    messages.filter(_.receiverId === userId).result
+    messages.filter(_.receiverId != userId).result
   }.map(_.toList)
 }

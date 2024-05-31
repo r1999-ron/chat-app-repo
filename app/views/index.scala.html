@@ -1,16 +1,62 @@
-@()
-
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>
-      Chat Application
-    </title>
-  </head>
-  <body>
-    <h1> Welcome to Chat Application</h1>
-    <a href="@routes.ChatController.sender()">Sender UI</a>
-    <a href="@routes.ChatController.receiver()">Receiver UI</a>
-  </body>
-</html>
+    <head>
+        <title>Chat Application</title>
+        <style>
+      body {
+          font-family: Arial, sans-serif;
+          background-color: #f5f5f5;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          margin: 0;
+      }
 
+      h1 {
+          color: #333;
+          font-size: 2.5em;
+          margin-bottom: 20px;
+      }
+
+      #landing-page {
+          text-align: center;
+      }
+
+      #landing-page img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 8px;
+          margin-bottom: 20px;
+      }
+
+      .enter-chat-button {
+          padding: 10px 20px;
+          background-color: #007bff;
+          color: #fff;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 1em;
+      }
+
+      .enter-chat-button:hover {
+          background-color: #0056b3;
+      }
+    </style>
+    </head>
+    <body>
+        <div id="landing-page">
+            <img src="https://example.com/your-image.jpg" alt="Welcome Image">
+            <h1>Hello 👋</h1>
+            <button class="enter-chat-button" onclick="enterChat()">Enter Chat</button>
+        </div>
+
+        <script>
+      function enterChat() {
+          window.location.href = 'http://localhost:9199/chat'; // Replace with the URL of your chat page
+      }
+    </script>
+    </body>
+</html>

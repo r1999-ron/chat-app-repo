@@ -36,8 +36,8 @@ class KafkaMessageConsumer @Inject()(config: Configuration, dbService: DatabaseS
           println(s"Consumed record: key=${record.key()}, value=${record.value()}")
           try {
             val Array(senderId, content) = record.value().split(": ", 2)
-           // val timestamp = timestampStr.toLong
-              dbService.saveMessage(record.key(), senderId, content, System.currentTimeMillis())
+            // val timestamp = timestampStr.toLong
+            dbService.saveMessage(record.key(), senderId, content, System.currentTimeMillis())
             println(s"Message saved to database: senderId=$senderId, receiverId=${record.key()}, content=$content")
           } catch {
             case e: Exception =>
