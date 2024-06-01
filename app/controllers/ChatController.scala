@@ -6,7 +6,6 @@ import javax.inject._
 import play.api.libs.json._
 import play.api.mvc._
 import services.{DatabaseService, KafkaMessageConsumer, KafkaMessageProducer}
-import play.api.Configuration
 
 import scala.concurrent.{ExecutionContext, Future}
 import models.Message
@@ -20,14 +19,12 @@ class ChatController @Inject()(
                                 kafkaProducer: KafkaMessageProducer,
                                 dbService: DatabaseService,// Inject KafkaMessageConsumer actor
                                 kafkaConsumer: KafkaMessageConsumer,
-                                lifeCycle: ApplicationLifecycle,
-                                config: Configuration
+                                lifeCycle: ApplicationLifecycle
                               )(implicit ec: ExecutionContext) extends AbstractController(cc) {
+  println("ChatController initialized")
 
   kafkaConsumer.receiveMessages()
 
-  private val loginUrl: String = config.get[String]("login.url")
-  private val chatappUrl : String = config.get[String]("chatapp.url")
 
   /*def chatPage = Action { implicit request =>
     println("Inside chatPage method")
@@ -66,9 +63,9 @@ class ChatController @Inject()(
 
   def chatPage = Action { implicit request =>
     request.getQueryString("username").map { username =>
-      Ok(views.html.chat(username, loginUrl))
+      Ok(views.html.chat(username))
     }.getOrElse {
-      Redirect(loginUrl)
+      Redirect("http://localhost:9299/login")
     }
   }
 
@@ -79,7 +76,7 @@ class ChatController @Inject()(
         Future.successful(BadRequest(Json.obj("status" -> "error", "message" -> JsError.toJson(errors))))
       },
       sendMessageRequest => {
-        kafkaProducer.sendMessage(sendMessageRequest.senderId, sendMessageRequest.receiverId, sendMessageRequest.content, sendMessageRequest.timestamp).map { _ =>
+        kafkaProducer.sendMessage(sendMessageRequest.senderName, sendMessageRequest.receiverName, sendMessageRequest.content, sendMessageRequest.timestamp).map { _ =>
           Ok(Json.obj("status" -> "Message sent"))
         }
       }
@@ -92,23 +89,23 @@ class ChatController @Inject()(
         Future.successful(BadRequest(Json.obj("status" -> "error", "message" -> JsError.toJson(errors))))
       },
       sendMessageRequest => {
-        kafkaProducer.sendMessage(sendMessageRequest.senderId, sendMessageRequest.receiverId, sendMessageRequest.content, sendMessageRequest.timestamp).map { _ =>
+        kafkaProducer.sendMessage(sendMessageRequest.senderName, sendMessageRequest.receiverName, sendMessageRequest.content, sendMessageRequest.timestamp).map { _ =>
           Ok(Json.obj("status" -> "Message sent"))
         }
       }
     )
   }
 
-  def fetchMessages(userId: String) = Action.async { implicit request =>
-    if (userId.trim.isEmpty) {
+  def fetchMessages(userName: String) = Action.async { implicit request =>
+    if (userName.trim.isEmpty) {
       Future.successful(BadRequest("User ID is missing"))
     } else {
-      dbService.getMessagesForUser(userId).map { messages =>
+      dbService.getMessagesForUser(userName).map { messages =>
         Ok(Json.toJson(messages))
       }
     }
   }
   def index() = Action { implicit request: Request[AnyContent] =>
-    Ok(views.html.index(chatappUrl))
+    Ok(views.html.index())
   }
 }

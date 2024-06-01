@@ -24,6 +24,9 @@ lazy val akkaVersion = sys.props.getOrElse("akka.version", "2.9.3")
 
 fork := true // Run in a separate JVM
 
+libraryDependencies += "com.typesafe.akka" %% "akka-stream" % "2.6.17"
+libraryDependencies += "com.typesafe.akka" %% "akka-stream-kafka" % "2.1.0"
+
 libraryDependencies ++= Seq(
   // Akka dependencies
   "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
@@ -34,6 +37,8 @@ libraryDependencies ++= Seq(
   // Akka Stream Kafka
   "com.typesafe.akka" %% "akka-stream" % akkaVersion,
   "com.typesafe.akka" %% "akka-stream-kafka" % "6.0.0",
+
+
 
   // Kafka client
   "org.apache.kafka" %% "kafka" % "3.7.0"

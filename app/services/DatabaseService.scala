@@ -14,20 +14,20 @@ class DatabaseService @Inject()(dbConfigProvider: DatabaseConfigProvider)(implic
   import dbConfig._
   import profile.api._
 
-  private class MessagesTable(tag: Tag) extends Table[Message](tag, "messages") {
-    def senderId = column[String]("sender_id")
-    def receiverId = column[String]("receiver_id")
+  private class MessagesTable(tag: Tag) extends Table[Message](tag, "chat_messages") {
+    def senderName = column[String]("sender_name")
+    def receiverName = column[String]("receiver_name")
     def content = column[String]("content")
     def timestamp = column[Long]("timestamp")
-    def * = (senderId, receiverId, content, timestamp) <> ((Message.apply _).tupled, Message.unapply)
+    def * = (senderName, receiverName, content, timestamp) <> ((Message.apply _).tupled, Message.unapply)
   }
 
   private val messages = TableQuery[MessagesTable]
 
-  def saveMessage(receiverId: String, senderId: String, content: String, timestamp: Long): Future[Unit] = {
-    println(s"Saving message: senderId=$senderId, receiverId=$receiverId, content=$content, timestamp=$timestamp")
+  def saveMessage(receiverName: String, senderName: String, content: String, timestamp: Long): Future[Unit] = {
+    println(s"Saving message: senderId=$senderName, receiverId=$receiverName, content=$content, timestamp=$timestamp")
     db.run {
-      messages += Message(senderId, receiverId, content, timestamp)
+      messages += Message(senderName, receiverName, content, timestamp)
     }.map(_ => {
       println("Message saved successfully")
     }).recover {
@@ -35,7 +35,11 @@ class DatabaseService @Inject()(dbConfigProvider: DatabaseConfigProvider)(implic
         println(s"Error saving message: ${ex.getMessage}")
     }
   }
-  def getMessagesForUser(userId: String): Future[List[Message]] = db.run {
-    messages.filter(_.receiverId != userId).result
-  }.map(_.toList)
+  def getMessagesForUser(userName: String): Future[List[Message]] = {
+    db.run {
+      messages.filter(_.receiverName != userName).result
+    }.map { messages =>
+      messages.toList
+    }
+  }
 }

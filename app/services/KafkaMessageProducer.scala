@@ -9,7 +9,7 @@ import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, Produce
 import org.apache.kafka.common.serialization.StringSerializer
 
 import scala.concurrent.{ExecutionContext, Future}
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject}
 
 @Singleton
 class KafkaMessageProducer @Inject()(config: play.api.Configuration)(implicit ec : ExecutionContext){
@@ -29,11 +29,11 @@ class KafkaMessageProducer @Inject()(config: play.api.Configuration)(implicit ec
   private val producer = new KafkaProducer[String, String](kafkaProducerProps)
 
   // Method to send message asynchronously
-  def sendMessage(senderId: String, receiverId: String, content: String, timestamp: Long): Future[Unit] = Future {
-    val message = s"$senderId: $content"
+  def sendMessage(senderName: String, receiverName: String, content: String, timestamp: Long): Future[Unit] = Future {
+    val message = s"$senderName: $content"
     println(s"Sending message to Kafka: $message")
-    val record = new ProducerRecord[String, String](KafkaTopic, receiverId, s"$senderId: $content")
-    println(s"Sending message: $senderId to $receiverId - $content and timestamp is $timestamp")
+    val record = new ProducerRecord[String, String](KafkaTopic, receiverName, s"$senderName: $content")
+    println(s"Sending message: $senderName to $receiverName - $content and timestamp is $timestamp")
     println(s"Record: $record")
     producer.send(record)
   }

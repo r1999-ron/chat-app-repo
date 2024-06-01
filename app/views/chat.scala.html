@@ -1,4 +1,4 @@
-@(username: String, loginUrl: String)
+@(username: String)
 
 <!DOCTYPE html>
 <html>
@@ -132,7 +132,7 @@
 
         <script>
                 document.getElementById('logoutButton').addEventListener('click', function() {
-                    window.location.href = '@loginUrl';
+                    window.location.href = 'http://localhost:9299/login';
                 });
         </script>
         <script>
@@ -146,8 +146,8 @@
                     }
 
                     const message = {
-                        senderId: from,
-                        receiverId: to,
+                        senderName: from,
+                        receiverName: to,
                         content: content,
                         timestamp: Date.now()
                     };
@@ -167,8 +167,8 @@
                     });
                 }
 
-                function fetchMessages(userId, listId) {
-                    const url = '@routes.ChatController.fetchMessages(":userId")'.replace(':userId', userId);
+                function fetchMessages(userName, listId) {
+                    const url = '@routes.ChatController.fetchMessages(":userId")'.replace(':userName', userName);
                     $.ajax({
                         url: url,
                         type: 'GET',
@@ -176,7 +176,7 @@
                             const messageList = $(listId);
                             messageList.find('li').remove();
                             messages.forEach(function(message) {
-                                const messageClass = message.senderId === userId ? 'sent' : 'received';
+                                const messageClass = message.senderId === userName ? 'sent' : 'received';
                                 appendMessage(message, messageClass, listId);
                             });
                         },
@@ -188,7 +188,7 @@
 
                 function appendMessage(message, messageClass, listId) {
                     const messageList = $(listId);
-                    const messageElement = `<li class="${messageClass}">${message.senderId}: ${message.content} <button class="reply-button" onclick="prepareReply('${message.senderId}', '${messageClass === 'sent' ? 'Receiver' : 'Sender'}')">Reply</button></li>`;
+                    const messageElement = `<li class="${messageClass}">${message.senderName}: ${message.content} <button class="reply-button" onclick="prepareReply('${message.senderName}', '${messageClass === 'sent' ? 'Receiver' : 'Sender'}')">Reply</button></li>`;
                     messageList.append(messageElement);
                 }
 
