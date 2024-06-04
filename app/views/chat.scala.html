@@ -70,6 +70,14 @@
                     background-color: #e7e7e7;
                     align-self: flex-start;
                 }
+                .align-right {
+                    align-self: flex-end;
+                }
+
+                .align-left {
+                    align-self: flex-start;
+                }
+
 
                 .message-input {
                     display: flex;
@@ -112,7 +120,6 @@
                 .reply-button:hover {
                     background-color: #0056b3;
                 }
-
                 .logout-button {
                     padding: 10px;
                     background-color: #dc3545;
@@ -132,7 +139,8 @@
                 document.getElementById('logoutButton').addEventListener('click', function() {
                     window.location.href = 'http://34.41.157.228:8056/login';
                 });
-
+        </script>
+        <script>
                 function sendMessage(from, to) {
                     const contentId = from === '@username' ? '#senderContent' : '#receiverContent';
                     const content = $(contentId).val().trim();
@@ -164,15 +172,20 @@
                     });
                 }
 
-                function fetchMessages(userName, listId) {
-                    const url = '@routes.ChatController.fetchMessages(":userName")'.replace(':userName', userName);
+                function fetchMessages(sender, receiver, listId) {
+                    const url = '@routes.ChatController.fetchMessages(":userName")'.replace(':userName', sender);
                     $.ajax({
                         url: url,
                         type: 'GET',
                         success: function(response) {
+                            console.log("Response from server:", response);
+                            const messages = JSON.parse(response);
                             const messageList = $(listId);
                             messageList.empty(); // Clear the message list
-                            messageList.html(response); // Insert the new HTML content
+                            messages.forEach(function(message) {
+                                const messageClass = message.senderName === sender ? 'sent' : 'received';
+                                appendMessage(message, messageClass, listId);
+                            });
                         },
                         error: function(error) {
                             alert('Error fetching messages');
@@ -182,9 +195,23 @@
 
                 function appendMessage(message, messageClass, listId) {
                     const messageList = $(listId);
-                    const messageElement = `<li class="${messageClass}">${message.senderName}: ${message.content} <button class="reply-button" onclick="prepareReply('${message.senderName}', '${messageClass === 'sent' ? 'Receiver' : 'Sender'}')">Reply</button></li>`;
+                    let alignmentClass;
+
+                    if (messageClass === 'sent') {
+                        alignmentClass = listId === '#messageListSender' ? 'sent' : 'received';
+                    } else {
+                        alignmentClass = listId === '#messageListReceiver' ? 'received' : 'sent';
+                    }
+
+                    const messageElement = `<li class="message ${messageClass} ${alignmentClass}">${message.senderName}: ${message.content}</li>`;
                     messageList.append(messageElement);
+
+                    // Append the message to the other chat box as well
+                    const otherListId = listId === '#messageListSender' ? '#messageListReceiver' : '#messageListSender';
+                    const otherMessageList = $(otherListId);
+                    otherMessageList.append(messageElement);
                 }
+
 
                 function prepareReply(receiverName, boxId) {
                     $(`#${boxId === 'Sender' ? 'receiver' : 'sender'}Id`).val(receiverName);
@@ -192,11 +219,11 @@
                 }
 
                 $(document).ready(function() {
-                    fetchMessages('@username', '#messageListSender');
-                    fetchMessages('receiver', '#messageListReceiver');
+                    fetchMessages('@username', 'receiver', '#messageListSender');
+                    fetchMessages('receiver', '@username', '#messageListReceiver');
                     setInterval(() => {
-                        fetchMessages('@username', '#messageListSender');
-                        fetchMessages('receiver', '#messageListReceiver');
+                        fetchMessages('@username', 'receiver', '#messageListSender');
+                        fetchMessages('receiver', '@username', '#messageListReceiver');
                     }, 5000); // Fetch messages every 5 seconds
                 });
         </script>

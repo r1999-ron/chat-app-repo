@@ -61,7 +61,10 @@ class ChatController @Inject()(
       Future.successful(BadRequest("User ID is missing"))
     } else {
       dbService.getMessagesForUser(userName).map { messages =>
-        Ok(views.html.fetchMessages(userName, messages))
+        val messageList = messages.map { message =>
+          s"{ senderName: '${message.senderName}', content: '${message.content}' }"
+        }.mkString(",")
+        Ok(messageList)
       }
     }
   }
