@@ -1,12 +1,9 @@
 package controllers
 
-import akka.actor.{ActorRef, ActorSystem}
-
 import javax.inject._
 import play.api.libs.json._
 import play.api.mvc._
 import services.{DatabaseService, KafkaMessageConsumer, KafkaMessageProducer}
-import play.api.Configuration
 
 import scala.concurrent.{ExecutionContext, Future}
 import models.Message
@@ -18,97 +15,60 @@ import play.api.inject.ApplicationLifecycle
 class ChatController @Inject()(
                                 cc: ControllerComponents,
                                 kafkaProducer: KafkaMessageProducer,
-                                dbService: DatabaseService,// Inject KafkaMessageConsumer actor
+                                dbService: DatabaseService,
                                 kafkaConsumer: KafkaMessageConsumer,
-                                lifeCycle: ApplicationLifecycle,
-                                config: Configuration
+                                lifeCycle: ApplicationLifecycle
                               )(implicit ec: ExecutionContext) extends AbstractController(cc) {
+  println("ChatController initialized")
 
-  kafkaConsumer.receiveMessages()
-
-  private val loginUrl: String = config.get[String]("login.url")
-  private val chatappUrl : String = config.get[String]("chatapp.url")
-
-  /*def chatPage = Action { implicit request =>
-    println("Inside chatPage method")
-    println("Session data:")
-    println(request.session.data)
-    request.session.get("username").map { username =>
-      println(s"Username found in session: $username")
-      Ok(views.html.chat(username))
-    }.getOrElse {
-      println("Username not found in session")
-      Unauthorized("You are not logged in")
-    }
-  }*/
-  /*def chatPage = Action { implicit request =>
-    val currentTime = System.currentTimeMillis()
-    val sessionExpiry = request.session.get("expiry").flatMap(_.toLongOption)
-
-    println(s"Current time: $currentTime")
-    println(s"Session expiry time: $sessionExpiry")
-
-    println("Session data: " + request.session.data)
-
-    if (sessionExpiry.exists(_ < currentTime)) {
-      println("Session expired. Redirecting to login page.")
-      Redirect("http://localhost:9299/login").withNewSession
-    } else {
-      request.session.get("username").map { username =>
-        println(s"User $username is logged in.")
-        Ok(views.html.chat(username))
-      }.getOrElse {
-        println("User is not logged in.")
-        Unauthorized("You are not logged in")
-      }
-    }
-  }*/
-
+  /**
+   * Renders the chat page for the given user.
+   * If the username is provided as a query parameter, renders the chat page for that user.
+   * Otherwise, returns an Unauthorized or redirects to the login page.
+   */
   def chatPage = Action { implicit request =>
     request.getQueryString("username").map { username =>
-      Ok(views.html.chat(username, loginUrl))
+      Ok(views.html.chat(username))
     }.getOrElse {
-      Redirect(loginUrl)
+      Unauthorized("You are not logged in")
+      Redirect("http://localhost:9299/login")
     }
   }
 
-
+  /**
+   * Sends a message to the Kafka topic.
+   * Expects JSON data containing message details in the request body.
+   */
   def sendMessage = Action.async(parse.json) { implicit request =>
     request.body.validate[Message].fold(
       errors => {
         Future.successful(BadRequest(Json.obj("status" -> "error", "message" -> JsError.toJson(errors))))
       },
       sendMessageRequest => {
-        kafkaProducer.sendMessage(sendMessageRequest.senderId, sendMessageRequest.receiverId, sendMessageRequest.content, sendMessageRequest.timestamp).map { _ =>
+        kafkaProducer.sendMessage(sendMessageRequest.senderName, sendMessageRequest.receiverName, sendMessageRequest.content, sendMessageRequest.timestamp).map { _ =>
           Ok(Json.obj("status" -> "Message sent"))
         }
       }
     )
   }
+  /**
+   * Fetches messages for the given user from the database.
+   * Expects the username as a path parameter.
+   */
 
-  def sendMessageToUser = Action.async(parse.json) { implicit request =>
-    request.body.validate[Message].fold(
-      errors => {
-        Future.successful(BadRequest(Json.obj("status" -> "error", "message" -> JsError.toJson(errors))))
-      },
-      sendMessageRequest => {
-        kafkaProducer.sendMessage(sendMessageRequest.senderId, sendMessageRequest.receiverId, sendMessageRequest.content, sendMessageRequest.timestamp).map { _ =>
-          Ok(Json.obj("status" -> "Message sent"))
-        }
-      }
-    )
-  }
-
-  def fetchMessages(userId: String) = Action.async { implicit request =>
-    if (userId.trim.isEmpty) {
+  def fetchMessages(userName: String) = Action.async { implicit request =>
+    if (userName.trim.isEmpty) {
       Future.successful(BadRequest("User ID is missing"))
     } else {
-      dbService.getMessagesForUser(userId).map { messages =>
-        Ok(Json.toJson(messages))
+      dbService.getMessagesForUser(userName).map { messages =>
+        Ok(views.html.fetchMessages(userName, messages))
       }
     }
   }
+  /**
+   * Renders the index page.
+   */
   def index() = Action { implicit request: Request[AnyContent] =>
-    Ok(views.html.index(chatappUrl))
+    Ok(views.html.index())
   }
 }

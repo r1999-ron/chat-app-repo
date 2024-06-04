@@ -10,10 +10,16 @@ import org.apache.kafka.common.serialization.StringSerializer
 import scala.concurrent.{ExecutionContext, Future}
 import play.api.Configuration
 import play.api.inject.ApplicationLifecycle
+
 import scala.jdk.CollectionConverters._
+import org.slf4j.LoggerFactory
+
+import java.util.concurrent.ForkJoinPool
 
 @Singleton
 class KafkaMessageConsumer @Inject()(config: Configuration, dbService: DatabaseService, lifecycle: ApplicationLifecycle)(implicit ec: ExecutionContext) {
+
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   private val kafkaConsumerProps: Properties = {
     val props = new Properties()
@@ -27,29 +33,49 @@ class KafkaMessageConsumer @Inject()(config: Configuration, dbService: DatabaseS
   private val consumer = new KafkaConsumer[String, String](kafkaConsumerProps)
   consumer.subscribe(List(config.get[String]("kafka.topic")).asJava)
 
-  def receiveMessages(): Future[Unit] = Future {
-    println("Entering receiveMessage() method")
-    try {
-      while (true) {
-        val records = consumer.poll(java.time.Duration.ofMillis(100))
-        for (record <- records.asScala) {
-          println(s"Consumed record: key=${record.key()}, value=${record.value()}")
-          try {
-            val Array(senderId, content) = record.value().split(": ", 2)
-            // val timestamp = timestampStr.toLong
-            dbService.saveMessage(record.key(), senderId, content, System.currentTimeMillis())
-            println(s"Message saved to database: senderId=$senderId, receiverId=${record.key()}, content=$content")
-          } catch {
-            case e: Exception =>
-              println(s"Error processing record: ${record.value()}, error: ${e.getMessage}")
+  //Creating a dedicated execution context for the consumer
+  private implicit val consumerEc : ExecutionContext = ExecutionContext.fromExecutor(new ForkJoinPool(1))
+
+  /**
+   * Starts the Kafka consumer to continuously poll messages from Kafka.
+   * Messages are processed asynchronously and saved to the database.
+   */
+  def startConsumer():Unit =  {
+    Future {
+      println("Starting to receive messages from Kafka")
+      try {
+        while (true) {
+          val records = consumer.poll(java.time.Duration.ofMillis(100))
+          for (record <- records.asScala) {
+            println(s"Consumed record: key=${record.key()}, value=${record.value()}")
+            try {
+              val Array(senderName, content) = record.value().split(": ", 2)
+              dbService.saveMessage(record.key(), senderName, content, System.currentTimeMillis()).onComplete {
+                case scala.util.Success(_) =>
+                  println(s"Message saved to database: senderName=$senderName, receiverName=${record.key()}, content=$content")
+                case scala.util.Failure(exception) =>
+                  println(s"Failed to save message: ${exception.getMessage}", exception)
+              }(ec)
+            } catch {
+              case e: Exception =>
+                println(s"Error processing record: ${record.value()}, error: ${e.getMessage}", e)
+            }
           }
         }
+      } catch {
+        case e: Exception =>
+          println(s"Error while consuming messages: ${e.getMessage}", e)
+      } finally {
+        consumer.close()
+        println("Kafka consumer closed")
       }
-    } catch {
-      case e: Exception =>
-        println(s"Error while consuming messages: ${e.getMessage}")
-    } finally {
-      consumer.close() // Close the Kafka consumer when done
-    }
+    }(consumerEc)
   }
+  // Adding shutdown hook to close the consumer when application exits
+  lifecycle.addStopHook{() =>
+    Future.successful(consumer.close())
+  }
+  // Starting the Kafka consumer upon initialization
+  startConsumer()
+
 }
